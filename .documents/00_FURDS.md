@@ -8,7 +8,7 @@
 ## HISTORIA DE USUARIO
 > 01_UserHistory.md
 ### HISTORIA Y PROPOSITO
-- **Quien:** Un Cajero de una tienda minorista que realiza ventas de manera recurrente.
+- **Quien:** Un **Cajero** de una tienda minorista que realiza ventas de manera recurrente.
   **Que Quiere:** Que para cada cliente se puedan acumular puntos de lealtad automáticamente por cada compra realizada, obteniendo 1 punto por cada $10 pesos mexicanos (MXN) consumidos (solo por bloques completos de $10; redondeo hacia abajo).
   **Para que:** Obtener beneficios y recompensas por su fidelidad, incentivando futuras compras en el establecimiento.
 
