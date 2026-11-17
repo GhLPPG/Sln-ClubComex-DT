@@ -6,9 +6,9 @@
 
 > Definir el problema / necesidad desde la perspectiva del usuario [ <span style="color:#c1e8c1">Discovery</span> ]
 
-- QUIEN: Un Cajero de una tienda minorista que realiza ventas de manera recurrente.
-- QUE QUIERE: Que para cada cliente se puedan acumular puntos de lealtad automáticamente por cada compra realizada, obteniendo 1 punto por cada $10 pesos mexicanos consumidos.
-- PARA QUE: Obtener beneficios y recompensas por su fidelidad, incentivando futuras compras en el establecimiento.
+- QUIEN: Un cajero de una tienda minorista que registra las ventas en el sistema de lealtad. El cliente es el beneficiario de los puntos acumulados.
+- QUE QUIERE: Registrar manualmente cada venta asociada a un cliente para que el sistema calcule puntos de lealtad de forma proporcional, a razón de 1 punto por cada $10 MXN del importe total pagado.
+- PARA QUE: El cliente pueda acumular beneficios por sus compras, incentivando futuras compras en el establecimiento.
 
 #### Mapeo del Proceso Actual (**)
 
@@ -30,9 +30,9 @@
 
 > Resumen de ALTO nivel de cómo el equipo planea resolver ese problema  (****Opcional**)  [<span style="color:#c1e8c1">Discovery</span>] [<span style="color:#fad598">Análisis</span>] [<span style="color:#9be4f2">Diseño</span>]
 
-- Desarrollar una aplicación que permita registrar clientes y asociarles las ventas realizadas en el establecimiento.
+- Desarrollar una aplicación que permita registrar clientes y que el cajero capture manualmente cada venta asociada a un cliente, incluyendo un identificador de cliente y el importe total pagado. El tipo de identificador está pendiente de definición.
 
-- Incorporar un mecanismo de cálculo automático que determine los puntos generados por cada venta, tomando como referencia el importe total y la equivalencia establecida de $10 MXN por punto.
+- Incorporar un mecanismo de cálculo automático y proporcional de puntos por venta, con base en el importe total pagado y la equivalencia de $10 MXN por punto.
 
 - Implementar un módulo de consulta que permita visualizar el saldo acumulado de puntos por cliente y el historial de movimientos generados por sus compras.
 
@@ -45,8 +45,8 @@
 - \- **Incluye:**
 
   - Registro de clientes.
-  - Registro de ventas asociadas a un cliente.
-  - Cálculo automático de puntos con base en la regla de $10 MXN = 1 punto.
+  - Registro manual de ventas asociadas a un cliente mediante un identificador de cliente y el importe total pagado; el tipo de identificador está pendiente de definición.
+  - Cálculo automático proporcional de puntos con base en la regla de $10 MXN = 1 punto.
   - Acumulación y consulta del saldo de puntos.
   - Consulta del historial de ventas y puntos generados.
 
