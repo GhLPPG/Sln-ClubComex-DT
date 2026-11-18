@@ -13,8 +13,8 @@
 
 >  Información General
 
-- Nombre de la Solución:
-- Objetivo:
+- Nombre de la Solución: Pendiente de confirmar.
+- Objetivo: Implementar el registro de clientes, las ventas vinculadas a cliente y el sistema de puntos de lealtad (acumulación automática, consulta de saldo e historial, y reversión por cancelación o devolución), según RF01–RF07 y NE01–NE05 de `02_ReqsDefinition.md`. El alcance verificable está en EH01–EH10, EU01–EU07 y CR01–CR07 de `03_AcceptCriteria.md`.
 
 ---
 
@@ -33,8 +33,9 @@
 
 | Componente | Tipo          | Descripción | Dependencia |
 | ---------- | ------------- | ----------- | ----------- |
-|            |               |             |             |
-|            |               |             |             |
+| Módulo de Ventas | Interno | Registra ventas vinculadas a cliente y provee el subtotal sin IVA y después de descuentos | Depende de Clientes y Puntos |
+| Módulo de Clientes y Puntos | Interno | Registro de clientes, acumulación, saldo e historial de puntos, y reversión | Base de datos |
+| Sistemas externos | Pendiente | No identificados en los documentos de referencia | Pendiente |
 
 
 
@@ -48,13 +49,13 @@
 
 | Categoría            | Tecnología |
 | -------------------- | ---------- |
-| Plataforma           |            |
-| IDE                  |            |
-| Lenguaje             |            |
-| Frameworks           |            |
-| Base de Datos        |            |
-| Librerías            |            |
-| Control de Versiones |            |
+| Plataforma           | Pendiente de confirmar |
+| IDE                  | Pendiente de confirmar |
+| Lenguaje             | Pendiente de confirmar |
+| Frameworks           | Pendiente de confirmar |
+| Base de Datos        | Pendiente de confirmar |
+| Librerías            | Pendiente de confirmar |
+| Control de Versiones | Git (repositorio GitHub `GhLPPG/Sln-ClubComex-DT`) |
 
 ---
 
@@ -192,8 +193,11 @@
 
 | Elemento | Descripción |
 | -------- | ----------- |
-|          |             |
-|          |             |
+| Entidades propuestas | Cliente, Venta, MovimientoPuntos y SaldoPuntos (propuesta; pendiente de validar contra el glosario de `02_ReqsDefinition.md`) |
+| Regla de cálculo | 1 punto por cada $10 MXN; base = subtotal sin IVA y después de descuentos; redondeo hacia abajo (NE01–NE03) |
+| Ventas sin cliente | Pendiente: no permitir puntos; si se permite la venta, queda sin acumulación |
+| Integridad | Un movimiento de reversión no debe eliminar movimientos previos (propuesta, pendiente de confirmar) |
+| Índices, respaldo y retención | Pendiente de confirmar |
 
 - 
 
@@ -212,7 +216,9 @@
 
 | Parámetro | Tipo | Valor | Descripción |
 | --------- | ---- | ----- | ----------- |
-|           |      |       |             |
+| MontoPorPunto | Decimal | 10 (MXN) | Monto requerido para generar 1 punto (NE01) |
+| Redondeo de puntos | Texto | Hacia abajo | Regla de redondeo (NE02) |
+| Secretos y credenciales | — | Pendiente | Pendiente de definir |
 
 - 
 
@@ -242,12 +248,12 @@
 
 | Elemento      | Implementación |
 | ------------- | -------------- |
-| Autenticación |                |
-| Autorización  |                |
-| Roles         |                |
-| Permisos      |                |
-| Cifrado       |                |
-| Auditoría     |                |
+| Autenticación | Pendiente (mecanismo no definido; ver EU03 y la nota de `03_AcceptCriteria.md`) |
+| Autorización  | Solo el rol Cajero puede registrar clientes y ventas (confirmado en 02) |
+| Roles         | Cajero (confirmado); otros roles pendientes |
+| Permisos      | Pendiente de definir por operación |
+| Cifrado       | Pendiente (NFR no definidos en 02) |
+| Auditoría     | Pendiente (trazabilidad no definida en 02) |
 
 >  **GUIA**
 > Principio de mínimo privilegio. | 
@@ -265,10 +271,10 @@
 
 | Tipo de Error | Comportamiento Esperado | Mensaje al Usuario |
 | ------------- | ----------------------- | ------------------ |
-| Funcional     |                         |                    |
-| Técnico       |                         |                    |
-| Integración   |                         |                    |
-| Seguridad     |                         |                    |
+| Funcional     | Rechazar o no generar puntos y no alterar el saldo (EU01, EU02, EU04, EU06); mostrar saldo 0 o historial vacío sin error (EU05, EU07) | Mensaje de validación claro o estado vacío |
+| Técnico       | Registrar el error y no dejar operaciones parciales | Pendiente de definir |
+| Integración   | Pendiente (sin integraciones externas identificadas) | Pendiente |
+| Seguridad     | Rechazar la operación sin modificar datos si el usuario no es Cajero (EU03); el mecanismo de autenticación está pendiente | Mensaje genérico de acceso denegado |
 
 >  **GUIA**
 > Registro de errores. | 
@@ -307,7 +313,7 @@
 
 | Sistema / API | Propósito | Método de Comunicación |
 | ------------- | --------- | ---------------------- |
-|               |           |                        |
+| Pendiente | No se identificaron integraciones externas en 02 ni 03 | Pendiente |
 
 >  **GUIA**
 > Disponibilidad del servicio. | 
@@ -324,17 +330,11 @@
 
 > Describir la secuencia operativa de la solución.
 
-> Paso 1 / Procedimiento 1.
-
-> Paso 2 / Procedimiento 2.
-
-> Resultado Final.
-
-1.     
-2. 
-3.
-4. 
-5. 
+1. El Cajero registra o consulta al cliente (RF01).
+2. El Cajero registra la venta vinculada al cliente (RF02).
+3. El sistema calcula los puntos con la regla NE01–NE03 (RF03).
+4. El sistema acumula los puntos y permite consultar saldo e historial (RF04–RF06).
+5. Al cancelar o devolver la venta, el sistema revierte los puntos generados (RF07, NE05).
 
 ---
 
@@ -387,8 +387,7 @@ Solution
 
 | Funcionalidad | Estado        | Observaciones |
 | ------------- | ------------- | ------------- |
-|               | Pendiente     |               |
-|               | En Desarrollo |               |
-|               | Implementado  |               |
+| Registro de clientes, ventas y puntos (RF01–RF07) | Pendiente | Estructura de código no revisada en esta propuesta |
+| Pantallas y componentes UI | Pendiente | Pendiente de definir |
 
 ---
