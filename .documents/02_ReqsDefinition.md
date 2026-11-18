@@ -16,6 +16,8 @@
 | Saldo de puntos | Total de puntos acumulados por un cliente. | |
 | Movimiento de puntos | Registro de los puntos generados por una venta. | Conforma el historial de puntos. |
 | Canje | Uso de puntos para obtener productos, descuentos o recompensas. | Fuera de alcance; queda como alcance futuro. |
+| Venta | Compra registrada en el punto de venta y asociada a un cliente. | Registrada por el Cajero. |
+| Importe base de puntos | Subtotal de la venta sin IVA y después de descuentos, expresado en MXN. | Base sobre la que se calculan los puntos. |
 
 ---
 
@@ -35,12 +37,13 @@
 
 | ID   | Nombre Módulo / Elemento | Preexistencia y Funcionamiento Actual | Descripción                                                                          | Clasificación       |
 | ---- | ------------------------ | ------------------------------------- | ------------------------------------------------------------------------------------ | ------------------- |
-| RF01 | Registro de clientes | No existe un registro centralizado de clientes ni de beneficios acumulados. | Integrar<br>Permitir registrar clientes para asociarles ventas y puntos de lealtad. | Pendiente de confirmar |
-| RF02 | Registro de ventas asociadas a un cliente | El cajero registra los productos en el punto de venta y genera el importe total; la venta no se asocia a un cliente en esta solución. | Integrar<br>Permitir registrar ventas y asociarlas a un cliente, conservando el importe total de la compra. | Pendiente de confirmar |
-| RF03 | Cálculo automático de puntos | Las compras no generan puntos de lealtad. | Integrar<br>Calcular automáticamente los puntos de cada venta a partir de su importe total, según las reglas NE01 a NE03. | Pendiente de confirmar |
-| RF04 | Acumulación de puntos y saldo por cliente | No existe registro de puntos acumulados. | Integrar<br>Acumular los puntos generados por cada venta en el saldo del cliente. | Pendiente de confirmar |
-| RF05 | Consulta de saldo de puntos | El cliente no cuenta con un mecanismo para consultar los puntos obtenidos. | Integrar<br>Permitir consultar el saldo acumulado de puntos por cliente. | Pendiente de confirmar |
-| RF06 | Consulta de historial de ventas y puntos | No existe historial de ventas ni de puntos asociado al cliente. | Integrar<br>Permitir consultar el historial de ventas y de movimientos de puntos generados por las compras de cada cliente. | Pendiente de confirmar |
+| RF01 | Registro de clientes | No existe un registro centralizado de clientes ni de beneficios acumulados. | Integrar<br>Permitir registrar clientes para asociarles ventas y puntos de lealtad. Acción restringida al rol Cajero. | Bajo |
+| RF02 | Registro de ventas asociadas a un cliente | El cajero registra los productos en el punto de venta y genera el importe total; la venta no se asocia a un cliente en esta solución. | Integrar<br>Permitir registrar ventas y asociarlas a un cliente, conservando el importe total de la compra. Acción restringida al rol Cajero. | Medio |
+| RF03 | Cálculo automático de puntos | Las compras no generan puntos de lealtad. | Integrar<br>Calcular automáticamente los puntos de cada venta a partir de su importe base de puntos, según las reglas NE01 a NE03. | Medio |
+| RF04 | Acumulación de puntos y saldo por cliente | No existe registro de puntos acumulados. | Integrar<br>Acumular los puntos generados por cada venta en el saldo del cliente. | Medio |
+| RF05 | Consulta de saldo de puntos | El cliente no cuenta con un mecanismo para consultar los puntos obtenidos. | Integrar<br>Permitir consultar el saldo acumulado de puntos por cliente. | Bajo |
+| RF06 | Consulta de historial de ventas y puntos | No existe historial de ventas ni de puntos asociado al cliente. | Integrar<br>Permitir consultar el historial de ventas y de movimientos de puntos generados por las compras de cada cliente. | Medio |
+| RF07 | Reversión de puntos por cancelación o devolución | No existe mecanismo para revertir puntos de ventas canceladas o devueltas. | Integrar<br>Restar del saldo del cliente los puntos generados por una venta cancelada o devuelta, según NE05. | Medio |
 
 ---
 
@@ -58,9 +61,11 @@
 | ---- | ------------------ | --------------------------------- |
 | NE01 | Equivalencia de puntos | Se otorga 1 punto de lealtad por cada $10 pesos mexicanos (MXN) consumidos. |
 | NE02 | Redondeo hacia abajo | Solo se otorgan puntos por bloques completos de $10 MXN; el remanente no genera puntos (ej.: una compra de $19 MXN genera 1 punto). |
-| NE03 | Base del cálculo | Los puntos se calculan sobre el importe total de la venta, expresado en MXN. |
+| NE03 | Base del cálculo | Los puntos se calculan sobre el subtotal de la venta sin IVA y después de descuentos, expresado en MXN. |
 | NE04 | Puntos solo para ventas asociadas a un cliente | Los puntos se generan y acumulan únicamente cuando la venta está asociada a un cliente registrado. |
-| NE05 | Exclusiones de la acumulación | No se contemplan canje de puntos (alcance futuro), promociones o reglas especiales de acumulación, ni transferencia de puntos entre clientes. |
+| NE05 | Reversión de puntos | Al cancelar o devolver una venta, se restan del saldo del cliente los puntos generados por dicha venta. |
+
+> **Exclusiones (no son reglas):** canje de puntos (alcance futuro), promociones o reglas especiales de acumulación, y transferencia de puntos entre clientes.
 
 ---
 
@@ -106,7 +111,8 @@
 > Definir autenticación, autorización, cifrado y gestión de accesos.
 > Considerar cumplimiento normativo y protección de datos.
 
-- Pendiente de definir: autenticación, autorización y gestión de accesos.
+- Autorización (confirmado): solo el rol Cajero puede registrar clientes y ventas.
+- Pendiente de definir: autenticación y gestión de accesos.
 - Pendiente de definir: protección de datos de clientes y cumplimiento normativo.
 
 #### Trazabilidad
