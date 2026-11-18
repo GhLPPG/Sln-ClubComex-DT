@@ -17,19 +17,18 @@ Prioriza estas fuentes, en este orden:
 
 
 # Ejecución
-Utiliza la skill `skill-construir-demo-web` para analizar, construir y validar la aplicación.
+Utiliza la skill `skill-construir-demo-web` para construir la demo-aplicación.
 Trabaja autónomamente en las decisiones técnicas de bajo impacto, siempre dentro del alcance documentado y los recursos existentes.
 
 
 # Reglas
 - No inventes requisitos, reglas ni funcionalidades.
-- Respeta el stack, la arquitectura y los lineamientos definidos.
-- Reutiliza recursos existentes sin alterar componentes ajenos.
 - Identifica contradicciones, omisiones o ambigüedades.
 - Utiliza datos o servicios mock solo cuando corresponda.
 - No escribas código fuente dentro del chat.
 - No modifiques el repositorio local sin autorización expresa.
 - No publiques cambios sin una autorización independiente.
+- Utiliza unicamente tegnologias web que no requiera un servidor web forzozamente para ejecutarse.
 
 
 
@@ -38,7 +37,7 @@ Trabaja autónomamente en las decisiones técnicas de bajo impacto, siempre dent
 ## Integración local
 Cuando la demo esté construida y validada:
 1. Presenta un resumen breve de los resultados y las limitaciones.
-2. Confirma la ubicación prevista: `Code/<NombreDelProyecto>/`.
+2. Confirma la ubicación prevista: `.Demo/Code/`.
 3. Solicita autorización expresa para integrar los archivos en el repositorio local.
 4. Solo después de recibirla, integra el proyecto.
 5. Verifica nuevamente la compilación y el funcionamiento.
