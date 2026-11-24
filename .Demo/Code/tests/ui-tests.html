@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Pruebas de UI - Sln.ClubComex</title>
+  <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+  <div id="app"></div>
+  <pre id="log" style="position:fixed;left:0;right:0;bottom:0;max-height:40vh;overflow:auto;background:#111;color:#eee;margin:0;padding:8px;font-size:12px;z-index:999"></pre>
+  <script src="../js/lcommon.js"></script>
+  <script src="../js/ldata.js"></script>
+  <script src="../js/lbusiness.js"></script>
+  <script src="../js/acceptance.js"></script>
+  <script src="../js/ui.js"></script>
+  <script>
+  (function () {
+    var errores = [], resultados = [];
+    window.addEventListener('error', function (e) { errores.push(e.message); });
+    var app = ClubComex.UI.iniciar({ adaptador: ClubComex.Data.crearAdaptadorMemoria(), almacenSesion: null, latenciaMs: 0, sinEjemplos: true });
+    var $ = function (s) { return document.querySelector(s); };
+    var $$ = function (s) { return [].slice.call(document.querySelectorAll(s)); };
+    function esperar(ms) { return new Promise(function (r) { setTimeout(r, ms || 30); }); }
+    function set(form, n, v) { var c = $('form[data-form="' + form + '"] [name="' + n + '"]'); c.value = v; c.dispatchEvent(new Event('input', { bubbles: true })); c.dispatchEvent(new Event('change', { bubbles: true })); }
+    function enviar(form) { $('form[data-form="' + form + '"]').requestSubmit(); return esperar(); }
+    function ir(v) { $('[data-action="ir"][data-vista="' + v + '"]').click(); return esperar(); }
+    function check(nombre, cond, detalle) { resultados.push({ nombre: nombre, ok: !!cond, detalle: cond ? '' : (detalle || '') }); }
+    function txt(s) { var e = $(s); return e ? e.textContent : ''; }
+    function toasts() { return $$('.toast').map(function (t) { return t.textContent; }).join(' | '); }
+    function login(u, p) { set('login', 'usuario', u); set('login', 'contrasena', p); return enviar('login'); }
+
+    async function correr() {
+      /* Login */
+      check('UI-01 Pantalla de login visible', $('form[data-form="login"]'));
+      await enviar('login');
+      check('UI-02 Login vacío muestra errores de campo', txt('[data-err="usuario"]') && txt('[data-err="contrasena"]'));
+      await login('cajero', 'mal');
+      check('UI-03 Credenciales inválidas rechazadas', /incorrectos/.test(txt('.form-banner')) && $('form[data-form="login"]'));
+      await login('cajero', 'cajero123');
+      check('UI-04 Login Cajero entra al shell', $('.shell') && /Cajero/.test(txt('.userbox')));
+
+      /* Clientes */
+      await ir('clientes');
+      await enviar('cliente');
+      check('UI-05 Cliente vacío: 3 errores y no se guarda', txt('[data-err="nombre"]') && txt('[data-err="direccion"]') && txt('[data-err="rfc"]') && app.repositorio.listarClientes().length === 0);
+      set('cliente', 'nombre', 'Ana Prueba'); set('cliente', 'direccion', 'Calle 5, CDMX'); set('cliente', 'rfc', 'aapp900101ab3');
+      await enviar('cliente');
+      check('UI-06 Cliente válido se registra y aparece en la tabla (EH01)', $$('tbody tr').length === 1 && /AAPP900101AB3/.test(txt('tbody')) && /registrado/.test(toasts()), toasts());
+      check('UI-07 Saldo inicial 0 en la lista (EH10)', $$('tbody tr td.num')[0].textContent.trim() === '0');
+
+      /* Ventas */
+      await ir('ventas');
+      var cid = app.servicios.listarClientes()[0].id;
+      await enviar('venta');
+      check('UI-08 Venta sin cliente se rechaza con mensaje (cliente obligatorio)', /cliente registrado/.test(txt('[data-err="clienteId"]')) && app.repositorio.listarVentas().length === 0);
+      set('venta', 'clienteId', cid); set('venta', 'subtotal', '19');
+      check('UI-09 Vista previa: base $19 => 1 punto (EH03)', txt('#pv-puntos') === '1', txt('#preview'));
+      await enviar('venta');
+      check('UI-10 Venta registrada con 1 punto', app.repositorio.obtenerSaldo(cid) === 1 && /Puntos generados: 1/.test(toasts()), toasts());
+      set('venta', 'clienteId', cid); set('venta', 'subtotal', '100'); set('venta', 'iva', '16');
+      check('UI-11 Vista previa: subtotal 100 + IVA => 10 pts, total 116 (EH08)', txt('#pv-puntos') === '10' && /116/.test(txt('#preview')));
+      await enviar('venta');
+      check('UI-12 Saldo 1 + 10 = 11 (EH04)', app.repositorio.obtenerSaldo(cid) === 11);
+      set('venta', 'clienteId', cid); set('venta', 'subtotal', '9.50');
+      await enviar('venta');
+      check('UI-13 Base $9.50 no genera puntos (EU02)', app.repositorio.obtenerSaldo(cid) === 11 && /no genera puntos/.test(toasts()));
+      set('venta', 'clienteId', cid); set('venta', 'subtotal', '100'); set('venta', 'descuento', '150');
+      await enviar('venta');
+      check('UI-14 Descuento mayor al subtotal rechazado', txt('[data-err="descuento"]') && app.repositorio.listarVentas().length === 3);
+
+      /* Cancelación con confirmación */
+      var btnCancel = $$('[data-action="revertir"][data-tipo="Cancelada"]');
+      check('UI-15 Hay botones Cancelar/Devolver en ventas registradas', btnCancel.length === 3);
+      var ventaCien = app.repositorio.listarVentas()[1].id;
+      $('[data-action="revertir"][data-tipo="Cancelada"][data-id="' + ventaCien + '"]').click();
+      await esperar();
+      check('UI-16 Se solicita confirmación antes de revertir', $('#dlg').open && /10 puntos/.test(txt('#dlg-texto')), txt('#dlg-texto'));
+      $('#dlg-cancel').click(); await esperar();
+      check('UI-17 Volver no modifica el saldo', app.repositorio.obtenerSaldo(cid) === 11 && !$('#dlg').open);
+      $('[data-action="revertir"][data-tipo="Cancelada"][data-id="' + ventaCien + '"]').click(); await esperar();
+      $('#dlg-ok').click(); await esperar(60);
+      check('UI-18 Cancelar resta 10 puntos (EH07)', app.repositorio.obtenerSaldo(cid) === 1 && app.repositorio.obtenerVenta(ventaCien).estado === 'Cancelada', toasts());
+      check('UI-19 Venta cancelada ya no ofrece reversión (EU06)', !$('[data-action="revertir"][data-id="' + ventaCien + '"]'));
+      var ventaCero = app.repositorio.listarVentas()[2].id;
+      $('[data-action="revertir"][data-tipo="Devuelta"][data-id="' + ventaCero + '"]').click(); await esperar();
+      check('UI-20 Venta sin puntos: aviso de que el saldo no cambia (EU04)', /no cambia/.test(txt('#dlg-texto')));
+      $('#dlg-ok').click(); await esperar(60);
+      check('UI-21 Devolver venta sin puntos no cambia el saldo', app.repositorio.obtenerSaldo(cid) === 1);
+
+      /* Consulta */
+      await ir('consulta');
+      check('UI-22 Saldo mostrado = 1 (EH05)', txt('#saldo-valor') === '1');
+      check('UI-23 Historial lista ventas y movimientos (EH06)', $$('tbody tr').length >= 3 && /Reversión/.test(txt('.content')));
+      app.servicios.cerrarSesion(); app.render(); await login('cajero', 'cajero123'); await ir('clientes');
+      set('cliente', 'nombre', 'Sin Ventas'); set('cliente', 'direccion', 'X'); set('cliente', 'rfc', 'SV1');
+      await enviar('cliente');
+      await ir('consulta');
+      check('UI-24 Cliente sin ventas: saldo 0 e historial vacío sin error (EU05, EU07)', txt('#saldo-valor') === '0' && $('#hist-vacio') && $('#mov-vacio') && !$('.form-banner-error'));
+
+      /* Ajustes demo: ya no existe el interruptor de ventas sin cliente (cliente siempre obligatorio) */
+      await ir('demo');
+      check('UI-25a Ajustes de demo: no existe interruptor para ventas sin cliente', !$('#chk-sincliente') && /no existen ventas sin cliente/.test(txt('.content')));
+      await ir('ventas');
+      check('UI-25b Selector de venta no ofrece opción "Sin cliente"', !/Sin cliente/i.test(txt('#f-clienteId')) && $('#f-clienteId').options[0].value === '');
+      var antes = app.repositorio.obtenerSaldo(cid), nV0 = app.repositorio.listarVentas().length, nM0 = app.repositorio.estado.movimientos.length;
+      set('venta', 'clienteId', ''); set('venta', 'subtotal', '500');
+      check('UI-25c Vista previa sin cliente no muestra acumulación de puntos', /obligatorio/.test(txt('#preview')), txt('#preview'));
+      await enviar('venta');
+      check('UI-25 Venta sin cliente (EU01) se rechaza: error de cliente obligatorio, sin venta ni movimientos, saldo intacto',
+        /cliente registrado/.test(txt('[data-err="clienteId"]')) && app.repositorio.listarVentas().length === nV0 &&
+        app.repositorio.estado.movimientos.length === nM0 && app.repositorio.obtenerSaldo(cid) === antes && /No se registró/.test(toasts()), toasts());
+      await ir('demo');
+      var fl = $('#chk-falla'); fl.checked = true; fl.dispatchEvent(new Event('change', { bubbles: true })); await esperar();
+      await ir('ventas');
+      var n = app.repositorio.listarVentas().length;
+      set('venta', 'clienteId', cid); set('venta', 'subtotal', '300');
+      await enviar('venta');
+      check('UI-26 Falla técnica simulada: mensaje de error y sin cambios parciales', /error técnico/.test(toasts()) && app.repositorio.listarVentas().length === n && app.repositorio.obtenerSaldo(cid) === antes && app.servicios.verificarIntegridad().length === 0, toasts());
+
+      /* Usuario sin rol Cajero */
+      await esperar(); $('[data-action="salir"]').click(); await esperar();
+      await login('visitante', 'visitante123');
+      check('UI-27 Usuario sin rol Cajero ingresa con distintivo de rol', /Sin rol Cajero/.test(txt('.userbox')));
+      var nCli = app.repositorio.listarClientes().length, nVen = app.repositorio.listarVentas().length;
+      await ir('clientes'); set('cliente', 'nombre', 'Intruso'); set('cliente', 'direccion', 'Z'); set('cliente', 'rfc', 'Z1');
+      await enviar('cliente');
+      check('UI-28 Registrar cliente sin rol Cajero: acceso denegado, sin cambios (EU03)', /Acceso denegado/.test(txt('.form-banner')) && app.repositorio.listarClientes().length === nCli);
+      await ir('ventas'); set('venta', 'clienteId', cid); set('venta', 'subtotal', '100');
+      await enviar('venta');
+      check('UI-29 Registrar venta sin rol Cajero: acceso denegado, sin cambios (EU03)', /Acceso denegado/.test(txt('.form-banner')) && app.repositorio.listarVentas().length === nVen);
+
+      /* Verificación y restantes */
+      await ir('verificacion'); $('[data-action="pruebas"]').click(); await esperar(60);
+      check('UI-30 Pantalla Verificación: todas las pruebas cumplen', /^(\d+) de \1 pruebas/.test(txt('#resumen-pruebas')), txt('#resumen-pruebas'));
+      await ir('inicio'); check('UI-31 Inicio muestra KPIs', $$('.kpi').length === 4);
+      $('[data-action="salir"]').click(); await esperar();
+      check('UI-32 Cerrar sesión vuelve al login', $('form[data-form="login"]'));
+      check('UI-33 Sin errores de JavaScript durante la ejecución', errores.length === 0, errores.join('; '));
+    }
+
+    correr().catch(function (e) { resultados.push({ nombre: 'EXCEPCION', ok: false, detalle: String(e && e.stack || e) }); }).then(function () {
+      var ok = resultados.filter(function (r) { return r.ok; }).length;
+      var lines = resultados.map(function (r) { return (r.ok ? 'PASS ' : 'FAIL ') + r.nombre + (r.detalle ? '  -> ' + r.detalle : ''); });
+      lines.unshift('UI-RESULT ' + ok + '/' + resultados.length + (ok === resultados.length ? ' ALL PASS' : ' HAY FALLAS'));
+      document.getElementById('log').textContent = lines.join('\n');
+      document.title = lines[0];
+    });
+  })();
+  </script>
+</body>
+</html>
